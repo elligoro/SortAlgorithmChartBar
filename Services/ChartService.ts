@@ -2,14 +2,16 @@ import ChartReducer from '../Reducers/ChartReducers';
 
 const baseUrl = process.env.REACT_APP_API_BASE_URL;
 
-export async function getChartData(sortType:string, onMsgCallback:any) {
-    //const res = await Promise.resolve({ok:true, json:()=>"{\"name\":\"ilya\"}"}) //fetch(baseUrl + "chart?type=" + sortType);
-    /*const res = await fetch(baseUrl + '/api/sort?type=' + sortType, {
+export async function GetSortSelections(){
+    const res = await fetch('http://localhost:8003' + '/api/sort/sort-options', {
         method: 'GET',
-        mode: 'cors'
+        mode: 'cors'       
     });
-    */
 
+    return await res.json();
+}
+
+export async function getChartData(sortType:string, onMsgCallback:any) {
     const ws = new WebSocket("ws://127.0.0.1:8003/api/sort-websocket");
        ws.onopen = () => {
            console.log("Connection Established!");

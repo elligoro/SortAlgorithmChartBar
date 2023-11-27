@@ -1,5 +1,6 @@
 import React from 'react';
-import { Route,Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
+import './App.scss';
 
 import HomePage from './home/HomePage';
 import Chart from './chart/ChartPage';

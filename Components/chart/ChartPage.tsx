@@ -1,5 +1,5 @@
 import React, { useState, useReducer, useEffect } from 'react';
-import { getChartData } from '../../Services/ChartService';
+import { getChartData, GetSortSelections } from '../../Services/ChartService';
 import ChartData from '../../Models/CahrtData';
 import ChartReducer from '../../Reducers/ChartReducers';
 import * as ChartReducerModel from '../../Models/ChartReducerModel';
@@ -37,9 +37,23 @@ try {
     throw Error("cannot get valid initial chart state");
 }
 */
-function Chart (){
-    const [chart, dispatch] = useReducer(ChartReducer, initialChartState);
-    
+function Chart() {
+  
+  interface RadioBtnOptions {
+    Name: string;
+    Value: string;
+    isChecked: boolean;
+  }
+
+  const [chart, dispatch] = useReducer(ChartReducer, initialChartState);
+  const [radioBtnOptions, setRadioBtnOptions] = useState(new Array<RadioBtnOptions>());
+  const onOptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    debugger;
+    const rbo = radioBtnOptions;
+    rbo.forEach(r => r.isChecked = (Number)(r.Value) === (Number)(e.target.value));                                                                 
+    setRadioBtnOptions([...rbo]);
+  }  
+  
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -61,25 +75,7 @@ const options = {
     },
   },
 };
-/*
-const labels = ['January', 'February', 'March', 'April', 'May', 'June', 'July'];
 
-const data = {
-  labels,
-  datasets: [
-    {
-      label: 'Dataset 1',
-      data: labels.map(() => faker.datatype.number({ min: 0, max: 1000 })),
-      backgroundColor: 'rgba(255, 99, 132, 0.5)',
-    },
-    {
-      label: 'Dataset 2',
-      data: labels.map(() => faker.datatype.number({ min: 0, max: 1000 })),
-      backgroundColor: 'rgba(53, 162, 235, 0.5)',
-    },
-  ],
-};
-*/
     const getTxtDic = () => { 
         const ab = "abcdefghijklmnopqrstuvwxyz".toLocaleUpperCase();
         const block = 50;
@@ -107,28 +103,56 @@ const data = {
             };
     };
 
-    useEffect(() => {
-        
-    },[]);
-    
+    const WsCallback = (event:MessageEvent) => {
+                                                  const data: Blob = event.data;
+                                                    data.text().then(d => {
+                                                      dispatch({ type: ChartReducerModel.ChartTypeEnum.set, payload: { data: JSON.parse(d) } });
+                                                    });
+                                                  }; 
+  
+  
+  
+  const fetchData = () => { 
+    GetSortSelections()
+    .then((res: Object) => {
+        const radioOp = [...radioBtnOptions];
+        Object.entries(res)
+          .forEach(([key, value]) => {
+            const rop: RadioBtnOptions = { Name: key, Value: value, isChecked: value === 0 ? true : false };
+            radioOp.push(rop);
+          });
+        setRadioBtnOptions(radioOp);
+    });
+  };
+  
+  useEffect(() => { fetchData() }, []);
+  
     return (
         <>  
-
             {chart && chart.length > 0 &&
-                                      <h1> {JSON.stringify(chart)} </h1>}
+            <h1> {JSON.stringify(chart)} </h1>}
+            <div>             
+            {radioBtnOptions.length > 0 && radioBtnOptions.map((so: RadioBtnOptions) => {
+              return (
+                    <div>
+                      <label>
+                        <span>{so.Name}</span>
+                        <input
+                          type="radio"
+                          value={so.Value}
+                          checked={so.isChecked}    
+                          onChange={onOptionChange}
+                        />
+                      </label>
+                    </div>
+                  )})}
+            </div>
             <button
                 className='btn btn-success'
                 onClick={(e) => {
-                    //getChartData('insertion_sort').then(res => dispatch({ type: ChartReducerModel.ChartTypeEnum.set, payload: { data: res } }));                  
-                  getChartData('insertion_sort', (event:MessageEvent) => {
-                                                              const data: Blob = event.data;
-                                                                data.text().then(d => {
-                                                                  dispatch({ type: ChartReducerModel.ChartTypeEnum.set, payload: { data: JSON.parse(d) } });
-                                                                });
-                                                              });                  
+                  getChartData((radioBtnOptions.find((r)=>r.isChecked)?.Name ?? 'insertion_sort'),WsCallback);                  
                 }}
-            >Show Chart</button>
-            
+            >Show Chart</button>          
         <></>
         <Bar options={options} data={setData(chart)} />;
         </>
